@@ -1,6 +1,12 @@
 from flask import Flask, render_template, request
+from flask_pymongo import PyMongo
+from flask_bcrypt import Bcrypt
 
 app = Flask(__name__)
+app.config["MONGO_URI"] = "mongodb://localhost:27017/articles"
+
+mongo = PyMongo(app)
+bcrypt = Bcrypt(app)
 
 
 @app.route("/login")
@@ -22,7 +28,19 @@ def signup():
         phone_number = request.form["phone_number"]
         city = request.form["city"]
 
-        print(first_name, email, password)
+        password_hash = bcrypt.generate_password_hash(password).decode("utf-8")
+
+        mongo.db.users.insert_one(
+            {
+                "first_name": first_name,
+                "last_name": last_name,
+                "email": email,
+                "password": password_hash,
+                "phone_number": phone_number,
+                "city": city,
+            }
+        )
+
         return render_template("signup.html")
 
     print("its an get call")
