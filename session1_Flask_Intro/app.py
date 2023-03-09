@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect
+from flask import Flask, render_template, request, redirect, flash, session
 from flask_pymongo import PyMongo
 from flask_bcrypt import Bcrypt
 
@@ -40,12 +40,19 @@ def login():
             if is_password_matched:
                 print("correct password")
                 # if password also matched then login successfull and redirect to dashboard
+                session["is_user_logged_in"] = True
+                session["first_name"] = found_user["first_name"]
+                session["last_name"] = found_user["last_name"]
+                session["email"] = found_user["email"]
+                flash("Login successfull", "success")
                 return redirect("/dashboard")
             else:
                 print("incorrect password")
+                flash("Invalid password provided", "danger")
 
         else:
             print("no user found")
+            flash("User not registered", "danger")
 
     return render_template("login.html")
 
@@ -88,4 +95,5 @@ def bye():
 
 
 if __name__ == "__main__":
+    app.secret_key = "shfgdekh"
     app.run(debug=True)
