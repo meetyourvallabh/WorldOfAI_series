@@ -1,0 +1,29 @@
+{% extends "layout.html" %}
+
+{% block body %}
+
+<h1>Edit Article</h1>
+<hr>
+<form method="POST" action="/edit_article/{{article.id}}">
+    <div class="mb-3">
+        <label for="exampleFormControlInput1" class="form-label">Article title</label>
+        <input name="title" type="text" value="{{article.title}}" class="form-control" id="exampleFormControlInput1" placeholder="Enter aticle title here">
+      </div>
+      <div class="mb-3">
+        <label for="exampleFormControlTextarea1" class="form-label">Content</label>
+        <textarea name="content" class="form-control" id="editor" rows="3">{{article.content}}</textarea>
+      </div>
+      
+
+      <div class="col-12">
+        <button type="submit" class="btn btn-primary">Submit</button>
+      </div>
+
+</form>
+
+
+
+
+{% endblock %}
+
+

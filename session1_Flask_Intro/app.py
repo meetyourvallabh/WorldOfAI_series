@@ -1,6 +1,8 @@
-from flask import Flask, render_template, request, redirect, flash, session
+from flask import Flask, render_template, request, redirect, flash, session, url_for
 from flask_pymongo import PyMongo
 from flask_bcrypt import Bcrypt
+import random
+from functools import wraps
 
 app = Flask(__name__)
 app.config["MONGO_URI"] = "mongodb://localhost:27017/articles"
@@ -9,14 +11,67 @@ mongo = PyMongo(app)
 bcrypt = Bcrypt(app)
 
 
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if "is_user_logged_in" in session:
+            return f(*args, **kwargs)
+        else:
+            flash("Unauthorised access", "warning")
+            return redirect(url_for("login"))
+
+    return decorated_function
+
+
 @app.route("/", methods=["GET"])
 def index():
     return render_template("index.html")
 
 
 @app.route("/dashboard", methods=["GET", "POST"])
+@login_required
 def dashboard():
-    return render_template("dashboard.html")
+    # get all articles of current user
+    articles = mongo.db.articles.find({"author_email": session["email"]})
+    return render_template("dashboard.html", articles=articles)
+
+
+@app.route("/add_article", methods=["GET", "POST"])
+@login_required
+def add_article():
+    if request.method == "POST":
+        title = request.form["title"]
+        content = request.form["content"]
+        id = random.randint(11111, 99999)
+        author = session["first_name"] + " " + session["last_name"]
+        author_email = session["email"]
+        mongo.db.articles.insert_one(
+            {
+                "title": title,
+                "content": content,
+                "id": id,
+                "author": author,
+                "author_email": author_email,
+            }
+        )
+
+        flash("Article submitted", "success")
+    return render_template("add_article.html")
+
+
+@app.route("/edit_article/<int:id>", methods=["GET", "POST"])
+def edit_article(id):
+
+    if request.method == "POST":
+        title = request.form["title"]
+        content = request.form["content"]
+        mongo.db.articles.update_one(
+            {"id": id}, {"$set": {"title": title, "content": content}}
+        )
+        flash("Article edited successfully", "success")
+
+    article = mongo.db.articles.find_one({"id": id})
+    return render_template("edit_article.html", article=article)
 
 
 @app.route("/login", methods=["GET", "POST"])
@@ -83,17 +138,21 @@ def signup():
             }
         )
 
-        return render_template("signup.html")
+        flash("User registered successfull", "success")
+
+        return redirect("/login")
 
     print("its an get call")
     return render_template("signup.html")
 
 
-@app.route("/bye")
-def bye():
-    return "Bye tata khatam"
+@app.route("/logout")
+def logout():
+    session.clear()
+    flash("Successfully logged out", "success")
+    return redirect(url_for("login"))
 
 
 if __name__ == "__main__":
     app.secret_key = "shfgdekh"
-    app.run(debug=True)
+    app.run(debug=True, port=5001)
