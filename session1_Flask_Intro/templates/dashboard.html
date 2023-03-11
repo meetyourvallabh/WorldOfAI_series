@@ -27,8 +27,11 @@
           <tr>
             <th scope="row">{{loop.index}}</th>
             <td>{{article.title}}</td>
-            <td>{{article.content}}</td>
-            <td><a class="btn btn-small btn-secondary" href="/edit_article/{{article.id}}">Edit</a></td>
+            <td>{{article.content | safe | truncate(20)}}</td>
+            <td>
+                <a class="btn btn-small btn-secondary" href="/edit_article/{{article.id}}">Edit</a>
+                <a class="btn btn-small btn-danger" href="/delete_article/{{article.id}}">Delete</a>
+            </td>
           </tr>
           {% endfor %}
             

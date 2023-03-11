@@ -3,6 +3,7 @@ from flask_pymongo import PyMongo
 from flask_bcrypt import Bcrypt
 import random
 from functools import wraps
+import uuid
 
 app = Flask(__name__)
 app.config["MONGO_URI"] = "mongodb://localhost:27017/articles"
@@ -25,7 +26,14 @@ def login_required(f):
 
 @app.route("/", methods=["GET"])
 def index():
-    return render_template("index.html")
+    articles = mongo.db.articles.find()
+    return render_template("index.html", articles=articles)
+
+
+@app.route("/view_article/<id>", methods=["GET", "POST"])
+def view_article(id):
+    article = mongo.db.articles.find_one({"id": id})
+    return render_template("view_article.html", article=article)
 
 
 @app.route("/dashboard", methods=["GET", "POST"])
@@ -42,7 +50,8 @@ def add_article():
     if request.method == "POST":
         title = request.form["title"]
         content = request.form["content"]
-        id = random.randint(11111, 99999)
+        # id = random.randint(11111, 99999)
+        id = str(uuid.uuid4())
         author = session["first_name"] + " " + session["last_name"]
         author_email = session["email"]
         mongo.db.articles.insert_one(
@@ -59,7 +68,8 @@ def add_article():
     return render_template("add_article.html")
 
 
-@app.route("/edit_article/<int:id>", methods=["GET", "POST"])
+@app.route("/edit_article/<id>", methods=["GET", "POST"])
+@login_required
 def edit_article(id):
 
     if request.method == "POST":
@@ -72,6 +82,14 @@ def edit_article(id):
 
     article = mongo.db.articles.find_one({"id": id})
     return render_template("edit_article.html", article=article)
+
+
+@app.route("/delete_article/<id>", methods=["GET", "POST"])
+@login_required
+def delete_article(id):
+    mongo.db.articles.delete_one({"id": id})
+    flash("Article deleted successsfully", "warning")
+    return redirect(url_for("dashboard"))
 
 
 @app.route("/login", methods=["GET", "POST"])
